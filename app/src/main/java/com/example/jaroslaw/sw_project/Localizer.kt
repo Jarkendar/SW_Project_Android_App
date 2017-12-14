@@ -29,8 +29,8 @@ class Localizer(private val context: Context) : Service(), LocationListener {
     private var longitude: Double = 0.0
     private var height: Double = 0.0
 
-    private final val MIN_DISTANCE_CHANGE_FOR_UPDATES: Float = 10f
-    private final val MIN_TIME_BW_UPDATES: Long = 1000 * 5 * 1
+    private val MIN_DISTANCE_CHANGE_FOR_UPDATES: Float = 10f
+    private val MIN_TIME_BW_UPDATES: Long = 1000 * 5 * 1
 
     protected var locationManager: LocationManager? = null
 
@@ -38,7 +38,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
         getLocation()
     }
 
-    public fun getLocation() {
+    fun getLocation() {
         try {
             locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
             checkGPS = locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER)
