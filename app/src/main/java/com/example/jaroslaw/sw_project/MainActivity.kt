@@ -1,14 +1,124 @@
 package com.example.jaroslaw.sw_project
 
+import android.Manifest.permission.ACCESS_COARSE_LOCATION
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.annotation.TargetApi
+import android.content.DialogInterface
+import android.content.pm.PackageManager
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AlertDialog
+import android.widget.TextView
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
+    private var permissionToRequest: ArrayList<String>? = null
+    private var permissionRejected : ArrayList<String> = ArrayList()
+    private var permissions : ArrayList<String> = ArrayList()
+
+    private final val ALL_PERMISSIONS_RESULT : Int = 101
+    var localizer : Localizer? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        textView.text = "Cześć"
+
+        permissions.add(ACCESS_FINE_LOCATION)
+        permissions.add(ACCESS_COARSE_LOCATION)
+
+        permissionToRequest = findUnAskedPermissions(permissions)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            if (permissionToRequest!!.size>0){
+                requestPermissions(permissionToRequest!!.toTypedArray<String>(),ALL_PERMISSIONS_RESULT)
+            }
+        }
+
+        button.setOnClickListener{
+            if (localizer!!.canGetLocation()){
+                localizer!!.getLocation()
+                val longitude = localizer!!.getLongitude()
+                val latitude = localizer!!.getLatitude()
+                val height = localizer!!.getAltitude()
+                val message : String =  "Longitude:"+ java.lang.Double.toString(longitude) + "\nLatitude:"+java.lang.Double.toString(latitude)+"\nAltitude:"+java.lang.Double.toString(height)
+                (findViewById<TextView>(R.id.textView)).text =message
+                Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+            }else{
+                localizer!!.showSettingsAlert()
+            }
+        }
     }
+
+    override fun onResume() {
+        super.onResume()
+        localizer = Localizer(this@MainActivity)
+    }
+
+    private fun findUnAskedPermissions(wanted: ArrayList<String>):ArrayList<String>{
+        var result : ArrayList<String> = ArrayList()
+
+        for (perm in wanted){
+            if (!hasPermission(perm)){
+                result.add(perm)
+            }
+        }
+        return result
+    }
+
+    private fun hasPermission(permission: String): Boolean{
+        if (canMakeSmores()){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+                return checkSelfPermission(permission)== PackageManager.PERMISSION_GRANTED
+            }
+        }
+        return true
+    }
+
+    private fun canMakeSmores():Boolean{
+        return Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when(requestCode){
+            ALL_PERMISSIONS_RESULT -> {
+                for (perm in permissionToRequest!!){
+                    if (!hasPermission(perm)){
+                        permissionRejected.add(perm)
+                    }
+                }
+                if (permissionRejected.size> 0){
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+                        if (shouldShowRequestPermissionRationale(permissionRejected.get(0))){
+                            showMessageOKCancel("These permissions are mandatory for the application. Please allow access.",
+                                    DialogInterface.OnClickListener { dialog, which ->
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+                                            requestPermissions(permissionRejected.toTypedArray(),ALL_PERMISSIONS_RESULT)
+                                        }
+                                    })
+                            return
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showMessageOKCancel(message:String, okListener: DialogInterface.OnClickListener){
+        AlertDialog.Builder(this@MainActivity)
+                .setMessage(message)
+                .setPositiveButton("OK",okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        localizer!!.stopListener()
+    }
+
 }
