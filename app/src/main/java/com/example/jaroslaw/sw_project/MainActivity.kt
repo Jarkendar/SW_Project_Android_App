@@ -2,6 +2,7 @@ package com.example.jaroslaw.sw_project
 
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.content.ContentValues.TAG
 import android.annotation.TargetApi
 import android.content.DialogInterface
 import android.content.pm.PackageManager
@@ -10,6 +11,7 @@ import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
@@ -20,6 +22,10 @@ class MainActivity : AppCompatActivity() {
     private var permissionRejected: ArrayList<String> = ArrayList()
     private var permissions: ArrayList<String> = ArrayList()
 
+    private var isRefreshRun : Boolean = false
+    private var automaticRefresher : AutomaticAsker? = null
+
+    private val REFRESH_TIME: Long = 1000 * 1
     private val ALL_PERMISSIONS_RESULT: Int = 101
     var localizer: Localizer? = null
 
@@ -39,18 +45,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         button.setOnClickListener {
-            AutomaticAsker().execute(1000)
-            if (localizer!!.canGetLocation()) {
-                localizer!!.getLocation()
-                val longitude = localizer!!.getLongitude()
-                val latitude = localizer!!.getLatitude()
-                val height = localizer!!.getAltitude()
-                val message: String = "Longitude:" + java.lang.Double.toString(longitude) + "\nLatitude:" + java.lang.Double.toString(latitude) + "\nAltitude:" + java.lang.Double.toString(height)
-                (findViewById<TextView>(R.id.textView)).text = message
-                Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-            } else {
-                localizer!!.showSettingsAlert()
-            }
+            automaticRefresher = AutomaticAsker()
+            automaticRefresher!!.execute(REFRESH_TIME)
+        }
+
+        button2.setOnClickListener{
+            automaticRefresher!!.cancel(true)
         }
     }
 
@@ -125,29 +125,55 @@ class MainActivity : AppCompatActivity() {
 
 
     inner class AutomaticAsker() : AsyncTask<Long, Int, Void>() {
+
+        private var running : Boolean = true
+
         override fun onPreExecute() {
             super.onPreExecute()
+            Log.d(TAG, this.toString() + " is refreshing ")
         }
 
         override fun onProgressUpdate(vararg values: Int?) {
             super.onProgressUpdate(*values)
-            val message: String = values[0].toString()
-            textView.text = message
+            val m : String = values[0].toString()
+            Toast.makeText(this@MainActivity, m, Toast.LENGTH_SHORT).show()
+            if (localizer!!.canGetLocation()) {
+                localizer!!.getLocation()
+                val longitude = localizer!!.getLongitude()
+                val latitude = localizer!!.getLatitude()
+                val height = localizer!!.getAltitude()
+                val message: String = "Longitude:" + java.lang.Double.toString(longitude) + "\nLatitude:" + java.lang.Double.toString(latitude) + "\nAltitude:" + java.lang.Double.toString(height)
+                Log.d(TAG, message)
+                Log.d(TAG, "refresh " + localizer)
+                textView.text = message
+            } else {
+                localizer!!.showSettingsAlert()
+            }
+            Log.d(TAG, "onProgress")
+        }
+
+        override fun onCancelled() {
+            super.onCancelled()
+            running = false
+            Log.d(TAG, this.toString() + "is canceled")
         }
 
         override fun onPostExecute(result: Void?) {
             super.onPostExecute(result)
+            Log.d(TAG, this.toString() + "is not refreshing")
         }
 
         override fun doInBackground(vararg t: Long?): Void {
-            var i: Int = 0
+            var i = 0
             val time: Long = t[0] as Long
-            while (true) {
+            while (running) {
+                Log.d(TAG, "running  "+ running)
                 try {
                     Thread.sleep(time)
                     publishProgress(i++)
                 } catch (e: InterruptedException) {
                     e.printStackTrace()
+                    running = false
                 }
             }
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.

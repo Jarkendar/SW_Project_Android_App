@@ -64,7 +64,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
                     Log.d(TAG, "getLocation location manager: " + (locationManager == null))
                     Log.d(TAG, "getLocation location manager: " + locationManager!!)
                     if (locationManager != null) {
-                        val locationProvider = LocationManager.NETWORK_PROVIDER
+                        val locationProvider = LocationManager.GPS_PROVIDER
                         loc = locationManager!!.getLastKnownLocation(locationProvider)
                         Log.d(TAG, "getLocation: loc " + loc!!)
                         Log.d(TAG, "getLocation: lastKnow " + locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER))
@@ -74,7 +74,27 @@ class Localizer(private val context: Context) : Service(), LocationListener {
                             height = loc!!.altitude
                         }
                     }
-
+                } else if (checkNetwork){
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    }
+                    locationManager!!.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES,
+                            this)
+                    Log.d(TAG, "getLocation location manager network: " + (locationManager == null))
+                    Log.d(TAG, "getLocation location manager network: " + locationManager!!)
+                    if (locationManager != null) {
+                        val locationProvider = LocationManager.NETWORK_PROVIDER
+                        loc = locationManager!!.getLastKnownLocation(locationProvider)
+                        Log.d(TAG, "getLocation: loc " + loc!!)
+                        Log.d(TAG, "getLocation: lastKnow " + locationManager!!.getLastKnownLocation(LocationManager.NETWORK_PROVIDER))
+                        if (loc != null) {
+                            latitude = loc!!.latitude
+                            longitude = loc!!.longitude
+                            height = loc!!.altitude
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
