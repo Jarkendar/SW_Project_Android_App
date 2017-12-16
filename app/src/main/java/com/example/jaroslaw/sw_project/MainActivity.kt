@@ -6,14 +6,12 @@ import android.annotation.TargetApi
 import android.content.ContentValues.TAG
 import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
@@ -23,13 +21,13 @@ class MainActivity : AppCompatActivity() {
     private var permissionRejected: ArrayList<String> = ArrayList()
     private var permissions: ArrayList<String> = ArrayList()
 
-    private var trening : Trening? = Trening(1)
+    private var training: Training? = Training(1)
 
     private var automaticRefresher: AutomaticAsker? = null
 
     private val REFRESH_TIME: Long = 1000 * 1
     private val ALL_PERMISSIONS_RESULT: Int = 101
-    var localizer: Localizer? = null
+    private var localizer: Localizer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,11 +53,11 @@ class MainActivity : AppCompatActivity() {
             automaticRefresher!!.cancel(true)
             start_button.isEnabled = true
             stop_button.isEnabled = false
-            Log.d(TAG, "Trening "+ trening!!.getTreningID().toString())
-            for(x in trening!!.getTreningHistory()){
-                Log.d(TAG, "location "+ x.getLocation()+" \ntime"+x.getTime())
+            Log.d(TAG, "Training " + training!!.getTrainingID().toString())
+            for (x in training!!.getTrainingHistory()) {
+                Log.d(TAG, "location " + x.getLocation() + " \ntime" + x.getTime())
             }
-            Log.d(TAG, "distance " +trening!!.getTreningDistance().toString())
+            Log.d(TAG, "distance " + training!!.getTrainingDistance().toString())
         }
     }
 
@@ -69,14 +67,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findUnAskedPermissions(wanted: ArrayList<String>): ArrayList<String> {
-        val result: ArrayList<String> = ArrayList()
-
-        for (perm in wanted) {
-            if (!hasPermission(perm)) {
-                result.add(perm)
-            }
-        }
-        return result
+        return wanted.filterNotTo(ArrayList()) { hasPermission(it) }
     }
 
     private fun hasPermission(permission: String): Boolean {
@@ -96,16 +87,14 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         when (requestCode) {
             ALL_PERMISSIONS_RESULT -> {
-                for (perm in permissionToRequest!!) {
-                    if (!hasPermission(perm)) {
-                        permissionRejected.add(perm)
-                    }
-                }
+                permissionToRequest!!
+                        .filterNot { hasPermission(it) }
+                        .forEach { permissionRejected.add(it) }
                 if (permissionRejected.size > 0) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        if (shouldShowRequestPermissionRationale(permissionRejected.get(0))) {
+                        if (shouldShowRequestPermissionRationale(permissionRejected[0])) {
                             showMessageOKCancel("These permissions are mandatory for the application. Please allow access.",
-                                    DialogInterface.OnClickListener { dialog, which ->
+                                    DialogInterface.OnClickListener { _, _ ->
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                             requestPermissions(permissionRejected.toTypedArray(), ALL_PERMISSIONS_RESULT)
                                         }
@@ -133,7 +122,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    inner class AutomaticAsker() : AsyncTask<Long, Int, Void>() {
+    inner class AutomaticAsker : AsyncTask<Long, Int, Void>() {
 
         private var running: Boolean = true
 
@@ -149,8 +138,8 @@ class MainActivity : AppCompatActivity() {
             if (localizer!!.canGetLocation()) {
                 localizer!!.getLocation()
 
-                val measurement : Measurement = Measurement(localizer!!.getLocaton(), System.currentTimeMillis())
-                trening!!.addMeasurement(measurement)
+                val measurement = Measurement(localizer!!.getLocaton(), System.currentTimeMillis())
+                training!!.addMeasurement(measurement)
 
                 val longitude = localizer!!.getLongitude()
                 val latitude = localizer!!.getLatitude()
@@ -176,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, this.toString() + "is not refreshing")
         }
 
-        override fun doInBackground(vararg t: Long?): Void {
+        override fun doInBackground(vararg t: Long?): Void? {
             var i = 0
             val time: Long = t[0] as Long
             while (running) {
@@ -189,7 +178,7 @@ class MainActivity : AppCompatActivity() {
                     running = false
                 }
             }
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            return null
         }
     }
 

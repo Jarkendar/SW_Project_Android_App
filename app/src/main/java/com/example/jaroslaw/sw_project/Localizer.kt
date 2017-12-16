@@ -1,21 +1,21 @@
 package com.example.jaroslaw.sw_project
 
+import android.Manifest
+import android.app.AlertDialog
 import android.app.Service
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.support.v4.app.ActivityCompat
-import android.util.Log
-import android.widget.Toast
-import android.Manifest
-import android.app.AlertDialog
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
+import android.support.v4.app.ActivityCompat
+import android.util.Log
+import android.widget.Toast
 
 
 class Localizer(private val context: Context) : Service(), LocationListener {
@@ -74,7 +74,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
                             height = loc!!.altitude
                         }
                     }
-                } else if (checkNetwork){
+                } else if (checkNetwork) {
                     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     }
                     locationManager!!.requestLocationUpdates(
@@ -102,7 +102,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
         }
     }
 
-    fun getLocaton(): Location{
+    fun getLocaton(): Location {
         return loc!!
     }
 

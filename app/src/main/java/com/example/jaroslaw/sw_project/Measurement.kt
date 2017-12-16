@@ -2,13 +2,7 @@ package com.example.jaroslaw.sw_project
 
 import android.location.Location
 
-/**
- * Created by jaroslaw on 16/12/17.
- */
-class Measurement constructor(location: Location, time: Long) {
-
-    private var location: Location = location
-    private var time: Long = time
+class Measurement constructor(private var location: Location, private var time: Long) {
 
     fun getLocation(): Location {
         return location
