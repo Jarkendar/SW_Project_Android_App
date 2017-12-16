@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private var permissionRejected: ArrayList<String> = ArrayList()
     private var permissions: ArrayList<String> = ArrayList()
 
-    private var locationHistory : LinkedList<Location> = LinkedList()
+    private var trening : Trening? = Trening(1)
 
     private var automaticRefresher: AutomaticAsker? = null
 
@@ -55,10 +55,11 @@ class MainActivity : AppCompatActivity() {
             automaticRefresher!!.cancel(true)
             start_button.isEnabled = true
             stop_button.isEnabled = false
-            Log.d(TAG, "history lenght "+locationHistory.size.toString())
-            for (x in locationHistory){
-                Log.d(TAG, "location = "+x.toString())
+            Log.d(TAG, "Trening "+ trening!!.getTreningID().toString())
+            for(x in trening!!.getTreningHistory()){
+                Log.d(TAG, "location "+ x.getLocation()+" \ntime"+x.getTime())
             }
+            Log.d(TAG, "distance " +trening!!.getTreningDistance().toString())
         }
     }
 
@@ -145,11 +146,12 @@ class MainActivity : AppCompatActivity() {
 
         override fun onProgressUpdate(vararg values: Int?) {
             super.onProgressUpdate(*values)
-            val m: String = values[0].toString()
-            Toast.makeText(this@MainActivity, m, Toast.LENGTH_SHORT).show()
             if (localizer!!.canGetLocation()) {
                 localizer!!.getLocation()
-                locationHistory.add(localizer!!.getLocaton())
+
+                val measurement : Measurement = Measurement(localizer!!.getLocaton(), System.currentTimeMillis())
+                trening!!.addMeasurement(measurement)
+
                 val longitude = localizer!!.getLongitude()
                 val latitude = localizer!!.getLatitude()
                 val height = localizer!!.getAltitude()
