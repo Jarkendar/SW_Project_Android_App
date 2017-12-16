@@ -102,6 +102,10 @@ class Localizer(private val context: Context) : Service(), LocationListener {
         }
     }
 
+    fun getLocaton(): Location{
+        return loc!!
+    }
+
     fun getLatitude(): Double {
         if (loc != null) {
             latitude = loc!!.latitude

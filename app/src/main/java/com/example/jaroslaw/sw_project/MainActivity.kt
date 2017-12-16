@@ -6,6 +6,7 @@ import android.annotation.TargetApi
 import android.content.ContentValues.TAG
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
@@ -14,12 +15,15 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private var permissionToRequest: ArrayList<String>? = null
     private var permissionRejected: ArrayList<String> = ArrayList()
     private var permissions: ArrayList<String> = ArrayList()
+
+    private var locationHistory : LinkedList<Location> = LinkedList()
 
     private var automaticRefresher: AutomaticAsker? = null
 
@@ -51,6 +55,10 @@ class MainActivity : AppCompatActivity() {
             automaticRefresher!!.cancel(true)
             start_button.isEnabled = true
             stop_button.isEnabled = false
+            Log.d(TAG, "history lenght "+locationHistory.size.toString())
+            for (x in locationHistory){
+                Log.d(TAG, "location = "+x.toString())
+            }
         }
     }
 
@@ -60,7 +68,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findUnAskedPermissions(wanted: ArrayList<String>): ArrayList<String> {
-        var result: ArrayList<String> = ArrayList()
+        val result: ArrayList<String> = ArrayList()
 
         for (perm in wanted) {
             if (!hasPermission(perm)) {
@@ -141,6 +149,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this@MainActivity, m, Toast.LENGTH_SHORT).show()
             if (localizer!!.canGetLocation()) {
                 localizer!!.getLocation()
+                locationHistory.add(localizer!!.getLocaton())
                 val longitude = localizer!!.getLongitude()
                 val latitude = localizer!!.getLatitude()
                 val height = localizer!!.getAltitude()
