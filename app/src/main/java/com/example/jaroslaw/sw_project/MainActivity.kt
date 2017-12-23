@@ -2,20 +2,28 @@ package com.example.jaroslaw.sw_project
 
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.location.Location
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private var permissionToRequest: ArrayList<String>? = null
     private var permissionRejected: ArrayList<String> = ArrayList()
@@ -23,11 +31,13 @@ class MainActivity : AppCompatActivity() {
 
     private var training: Training? = Training(1)
 
-    private var automaticRefresher: AutomaticAsker? = null
+    private var automaticRefresher: AutomaticRefresher? = null
 
     private val REFRESH_TIME: Long = 1000 * 1
     private val ALL_PERMISSIONS_RESULT: Int = 101
     private var localizer: Localizer? = null
+    private var sensorManager: SensorManager? = null
+    private var accelerometer: Sensor? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         start_button.setOnClickListener {
-            automaticRefresher = AutomaticAsker()
+            automaticRefresher = AutomaticRefresher()
             automaticRefresher!!.execute(REFRESH_TIME)
         }
 
@@ -58,12 +68,39 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "location " + x.getLocation() + " \ntime" + x.getTime())
             }
             Log.d(TAG, "distance " + training!!.getTrainingDistance().toString())
+            Toast.makeText(this,training!!.getTrainingDistance().toString(), Toast.LENGTH_SHORT ).show()
         }
+        initSensors()
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun initSensors() {
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        for (x in sensorManager!!.getSensorList(Sensor.TYPE_ALL)) {
+            Log.d(TAG, "sensor Type: " + x.toString())
+        }
+        accelerometer = sensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, p1: Int) {}
+
+    override fun onSensorChanged(sensorEvent: SensorEvent?) {
+        if (sensorEvent!!.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            var vector = sensorEvent.values
+            var x = vector[0].toDouble()
+            var y = vector[1].toDouble()
+            var z = vector[2].toDouble()
+            var l = Math.sqrt((Math.pow(x, 2.0) + Math.pow(y, 2.0)) + Math.pow(z, 2.0))
+            Log.d(TAG, "earth velocity = " + l.toString() + "; time = " + System.currentTimeMillis())
+        }
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onResume() {
         super.onResume()
-        localizer = Localizer(this@MainActivity)
+        localizer = Localizer(applicationContext)
+        sensorManager!!.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager!!.unregisterListener(this)
     }
 
     private fun findUnAskedPermissions(wanted: ArrayList<String>): ArrayList<String> {
@@ -122,7 +159,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    inner class AutomaticAsker : AsyncTask<Long, Int, Void>() {
+    inner class AutomaticRefresher : AsyncTask<Long, Int, Void>() {
 
         private var running: Boolean = true
 
@@ -137,10 +174,9 @@ class MainActivity : AppCompatActivity() {
             super.onProgressUpdate(*values)
             if (localizer!!.canGetLocation()) {
                 localizer!!.getLocation()
-
-                val measurement = Measurement(localizer!!.getLocaton(), System.currentTimeMillis())
+                Log.d(TAG, "location1 " + localizer!!.getLocation().toString())
+                val measurement = Measurement(localizer!!.getLocation() as Location, System.currentTimeMillis())
                 training!!.addMeasurement(measurement)
-
                 val longitude = localizer!!.getLongitude()
                 val latitude = localizer!!.getLatitude()
                 val height = localizer!!.getAltitude()
