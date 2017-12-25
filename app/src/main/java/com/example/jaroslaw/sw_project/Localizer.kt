@@ -16,6 +16,13 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.widget.Toast
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.LocationCallback
+
+
+
+
 
 
 class Localizer(private val context: Context) : Service(), LocationListener {
@@ -35,6 +42,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
 
     private var locationManager: LocationManager? = null
 
+
     init {
         getLocation()
     }
@@ -44,6 +52,8 @@ class Localizer(private val context: Context) : Service(), LocationListener {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(context, "PLZ open up GPS To Access", Toast.LENGTH_SHORT).show()
             return null
+
+
         }
         try {
             locationManager = context.applicationContext
@@ -164,7 +174,7 @@ class Localizer(private val context: Context) : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        this.location = location
+        this.location = getLocation()
         latitude = location.latitude
         longitude = location.longitude
         height = location.altitude
