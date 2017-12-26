@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SW_Project</string>
+    <string name="training_save_to_datebase">Zapisywanie treningu</string>
 </resources>

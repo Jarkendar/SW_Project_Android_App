@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -24,6 +25,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private var locationRequest: LocationRequest = LocationRequest()
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
+
+    private var training : Training = Training(0)
+
+    private val TRAINING_ID = 0L
+
+    private var isTraining = false
 
     private val TAG = "MyActivity"
 
@@ -42,6 +49,27 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         locationRequest.setInterval(10 * 1000)
         locationRequest.setFastestInterval(5 * 1000)
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+    }
+
+    fun startTraining(view : View){
+        isTraining = true
+        training = Training(TRAINING_ID)
+        start_button.isEnabled = false
+        stop_button.isEnabled = true
+    }
+
+    fun stopTraining(view : View){
+        isTraining = false
+
+        //todo save to database training
+        for (measure in training.getTrainingHistory()){
+            Log.d(TAG, "measure : "+ measure)
+        }
+
+        val str : String = getString(R.string.training_save_to_datebase)
+        Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
+        start_button.isEnabled = true
+        stop_button.isEnabled = false
     }
 
 
@@ -68,10 +96,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     override fun onLocationChanged(location: Location?) {
         latitude = location!!.latitude
         longitude = location!!.longitude
-        var message :String = "Latitude: " + latitude.toString() +"\nLongitude: " + longitude.toString()+"\nAltitude: " + location!!.altitude.toString()
+        val message :String = "Latitude: " + latitude.toString() +"\nLongitude: " + longitude.toString()+"\nAltitude: " + location!!.altitude.toString() + "\nTime "+ location!!.time
         location_textView.text = message
-     //   tvLatitude.text = "Latitude: " + latitude.toString()
-     //   tvLongitude.text = "Longitude: " + longitude.toString()
+        if (isTraining) {
+            training.addMeasurement(Measurement(location))
+            Log.d(TAG,"save location: "+location)
+        }
         Log.d(TAG, "time "+System.currentTimeMillis().toString())
     }
 
