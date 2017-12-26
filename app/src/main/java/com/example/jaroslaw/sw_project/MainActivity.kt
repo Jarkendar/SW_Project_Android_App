@@ -3,6 +3,7 @@ package com.example.jaroslaw.sw_project
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.database.sqlite.SQLiteDatabase
 import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -26,11 +27,10 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
 
-    private var training : Training = Training(0)
-
+    private var training: Training = Training(0)
     private val TRAINING_ID = 0L
-
     private var isTraining = false
+    private var databaseManager: DatabaseManager = DatabaseManager(this)
 
     private val TAG = "MyActivity"
 
@@ -51,25 +51,36 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
     }
 
-    fun startTraining(view : View){
+    fun startTraining(view: View) {
         isTraining = true
         training = Training(TRAINING_ID)
+
         start_button.isEnabled = false
         stop_button.isEnabled = true
     }
 
-    fun stopTraining(view : View){
+    fun stopTraining(view: View) {
         isTraining = false
 
-        //todo save to database training
-        for (measure in training.getTrainingHistory()){
-            Log.d(TAG, "measure : "+ measure)
+        //todo save to databaseManager training, write function
+        for (measure in training.getTrainingHistory()) {
+            Log.d(TAG, "measure : " + measure)
         }
 
-        val str : String = getString(R.string.training_save_to_datebase)
+        val str: String = getString(R.string.training_save_to_datebase)
         Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
         start_button.isEnabled = true
         stop_button.isEnabled = false
+
+        insertTrainingToDatabase()
+    }
+
+    private fun insertTrainingToDatabase() {
+        synchronized(this) {
+            var writeDatabase: SQLiteDatabase = databaseManager.writableDatabase
+            databaseManager.insertTraining(writeDatabase, training)
+            writeDatabase.close()
+        }
     }
 
 
@@ -96,13 +107,13 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     override fun onLocationChanged(location: Location?) {
         latitude = location!!.latitude
         longitude = location!!.longitude
-        val message :String = "Latitude: " + latitude.toString() +"\nLongitude: " + longitude.toString()+"\nAltitude: " + location!!.altitude.toString() + "\nTime "+ location!!.time
+        val message: String = "Latitude: " + latitude.toString() + "\nLongitude: " + longitude.toString() + "\nAltitude: " + location!!.altitude.toString() + "\nTime " + location!!.time
         location_textView.text = message
         if (isTraining) {
             training.addMeasurement(Measurement(location))
-            Log.d(TAG,"save location: "+location)
+            Log.d(TAG, "save location: " + location)
         }
-        Log.d(TAG, "time "+System.currentTimeMillis().toString())
+        Log.d(TAG, "time " + System.currentTimeMillis().toString())
     }
 
     override fun onStart() {

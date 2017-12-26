@@ -5,21 +5,17 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/**
- * Created by jaroslaw on 26/12/17.
- */
-
 private val DB_NAME = "TrainingDataBase"
 private val DB_VERSION = 1
 
 class DatabaseManager (context: Context): SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION){
 
-    override fun onCreate(p0: SQLiteDatabase?) {
-
+    override fun onCreate(sqLiteDatabase: SQLiteDatabase?) {
+        upgradeDatabase(sqLiteDatabase, 0, DB_VERSION)
     }
 
     override fun onUpgrade(sqLiteDatabase: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-
+        upgradeDatabase(sqLiteDatabase, oldVersion, newVersion)
     }
 
     private fun upgradeDatabase(sqLiteDatabase: SQLiteDatabase?, oldVersion: Int, newVersion: Int){
@@ -28,7 +24,7 @@ class DatabaseManager (context: Context): SQLiteOpenHelper(context, DB_NAME, nul
         }
     }
 
-    fun insertTraining(sqLiteDatabase: SQLiteDatabase? ,training: Training){
+    fun insertTraining(sqLiteDatabase: SQLiteDatabase ,training: Training){
         val trainingID = training.getTrainingID()
         for(measure in training.getTrainingHistory()){
             //todo insert measurement to database
@@ -39,7 +35,7 @@ class DatabaseManager (context: Context): SQLiteOpenHelper(context, DB_NAME, nul
         }
     }
 
-    fun selectTraining(sqLiteDatabase: SQLiteDatabase?, trainingID : Long){
+    fun selectTraining(sqLiteDatabase: SQLiteDatabase, trainingID : Long){
         //todo select training with specific ID
         //sqLiteDatabase!!.query()
     }
