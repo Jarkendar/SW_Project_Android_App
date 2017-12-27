@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private var training: Training = Training(0)
     private val TRAINING_ID = 0L
     private var isTraining = false
-    private var databaseManager: DatabaseManager = DatabaseManager(this)
+    private var databaseManager: DatabaseManager? = null
 
     private val TAG = "MyActivity"
 
@@ -49,6 +49,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         locationRequest.setInterval(10 * 1000)
         locationRequest.setFastestInterval(5 * 1000)
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+
+        databaseManager = DatabaseManager(applicationContext)
     }
 
     fun startTraining(view: View) {
@@ -75,10 +77,18 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         insertTrainingToDatabase()
     }
 
+    fun readTrainingFromBase(view: View){
+
+    }
+
+    fun synchronizeWithServer(view: View){
+
+    }
+
     private fun insertTrainingToDatabase() {
         synchronized(this) {
-            var writeDatabase: SQLiteDatabase = databaseManager.writableDatabase
-            databaseManager.insertTraining(writeDatabase, training)
+            var writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
+            databaseManager!!.insertTraining(writeDatabase, training)
             writeDatabase.close()
         }
     }
