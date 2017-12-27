@@ -49,8 +49,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         locationRequest.setInterval(10 * 1000)
         locationRequest.setFastestInterval(5 * 1000)
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-
-        databaseManager = DatabaseManager(applicationContext)
     }
 
     fun startTraining(view: View) {
@@ -77,8 +75,17 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         insertTrainingToDatabase()
     }
 
-    fun readTrainingFromBase(view: View){
-
+    fun readTrainingFromBase(view: View) {
+        synchronized(this) {
+            databaseManager = DatabaseManager(this)
+            var readerDatabase : SQLiteDatabase = databaseManager!!.readableDatabase
+            var training : Training = databaseManager!!.selectTraining(readerDatabase, 0)
+            for (measure in training.getTrainingHistory()){
+                Log.d(TAG, "loaded measure : " + measure)
+            }
+            readerDatabase.close()
+            databaseManager!!.close()
+        }
     }
 
     fun synchronizeWithServer(view: View){
@@ -87,9 +94,11 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     private fun insertTrainingToDatabase() {
         synchronized(this) {
+            databaseManager = DatabaseManager(this)
             var writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
             databaseManager!!.insertTraining(writeDatabase, training)
             writeDatabase.close()
+            databaseManager!!.close()
         }
     }
 
