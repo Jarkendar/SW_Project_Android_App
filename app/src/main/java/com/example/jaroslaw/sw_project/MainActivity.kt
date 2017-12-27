@@ -1,10 +1,16 @@
 package com.example.jaroslaw.sw_project
 
 import android.Manifest
+import android.Manifest.permission.ACCESS_COARSE_LOCATION
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.annotation.TargetApi
+import android.app.AlertDialog
 import android.content.ContentValues
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
@@ -21,6 +27,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
+    private var permissionToRequest: ArrayList<String>? = null
+    private var permissionRejected: ArrayList<String> = ArrayList()
+    private var permissions: ArrayList<String> = ArrayList()
+
     private var fusLocationProviderAPI: FusedLocationProviderApi = LocationServices.FusedLocationApi
     private var googleApiClient: GoogleApiClient? = null
     private var locationRequest: LocationRequest = LocationRequest()
@@ -33,10 +43,22 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private var databaseManager: DatabaseManager? = null
 
     private val TAG = "MyActivity"
+    private val ALL_PERMISSIONS_RESULT: Int = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        permissions.add(ACCESS_FINE_LOCATION)
+        permissions.add(ACCESS_COARSE_LOCATION)
+
+        permissionToRequest = findUnAskedPermissions(permissions)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (permissionToRequest!!.size > 0) {
+                requestPermissions(permissionToRequest!!.toTypedArray<String>(), ALL_PERMISSIONS_RESULT)
+            }
+        }
 
         googleApiClient = GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API)
@@ -78,9 +100,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     fun readTrainingFromBase(view: View) {
         synchronized(this) {
             databaseManager = DatabaseManager(this)
-            var readerDatabase : SQLiteDatabase = databaseManager!!.readableDatabase
-            var training : Training = databaseManager!!.selectTraining(readerDatabase, 0)
-            for (measure in training.getTrainingHistory()){
+            var readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
+            var training: Training = databaseManager!!.selectTraining(readerDatabase, 0)
+            for (measure in training.getTrainingHistory()) {
                 Log.d(TAG, "loaded measure : " + measure)
             }
             readerDatabase.close()
@@ -88,7 +110,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         }
     }
 
-    fun synchronizeWithServer(view: View){
+    fun synchronizeWithServer(view: View) {
 
     }
 
@@ -151,12 +173,64 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     override fun onPause() {
         super.onPause()
-        fusLocationProviderAPI.removeLocationUpdates(googleApiClient, this)
+        if (googleApiClient!!.isConnected) {
+            fusLocationProviderAPI.removeLocationUpdates(googleApiClient, this)
+        }
     }
 
     override fun onStop() {
         super.onStop()
         googleApiClient!!.disconnect()
+    }
+
+    private fun findUnAskedPermissions(wanted: ArrayList<String>): ArrayList<String> {
+        return wanted.filterNotTo(ArrayList()) { hasPermission(it) }
+    }
+
+    private fun hasPermission(permission: String): Boolean {
+        if (canMakeSmores()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        return true
+    }
+
+    private fun canMakeSmores(): Boolean {
+        return Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            ALL_PERMISSIONS_RESULT -> {
+                permissionToRequest!!
+                        .filterNot { hasPermission(it) }
+                        .forEach { permissionRejected.add(it) }
+                if (permissionRejected.size > 0) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (shouldShowRequestPermissionRationale(permissionRejected[0])) {
+                            showMessageOKCancel("These permissions are mandatory for the application. Please allow access.",
+                                    DialogInterface.OnClickListener { _, _ ->
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                            requestPermissions(permissionRejected.toTypedArray(), ALL_PERMISSIONS_RESULT)
+                                        }
+                                    })
+                            return
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showMessageOKCancel(message: String, okListener: DialogInterface.OnClickListener) {
+        AlertDialog.Builder(this@MainActivity)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show()
     }
 
 }

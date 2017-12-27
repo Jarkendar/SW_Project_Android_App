@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.location.Location
 import android.util.Log
 
-class DatabaseManager(context: Context) : SQLiteOpenHelper(context, "TrainingDataBase", null, 1) {
+class DatabaseManager constructor(var context: Context) : SQLiteOpenHelper(context, "TrainingDataBase", null, 1) {
 
     private val TABLE_NAME_TRAININGS: String = "TRAININGS"
     private val FIELD_TRAINING_ID: String = "TRAINING_ID"
@@ -32,7 +32,7 @@ class DatabaseManager(context: Context) : SQLiteOpenHelper(context, "TrainingDat
         if (oldVersion < 1) {
             //todo create table in database
             val sqlQuery: String = "CREATE TABLE " + TABLE_NAME_TRAININGS + " (" + FIELD_ROW_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    FIELD_TRAINING_ID + " LONG" +
+                    FIELD_TRAINING_ID + " LONG," +
                     FIELD_LATITUDE + " DOUBLE, " +
                     FIELD_LONGITUDE + " DOUBLE, " +
                     FIELD_TIME + " LONG" +
