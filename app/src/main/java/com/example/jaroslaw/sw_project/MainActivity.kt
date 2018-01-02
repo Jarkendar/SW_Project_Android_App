@@ -100,8 +100,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     fun readTrainingFromBase(view: View) {
         synchronized(this) {
             databaseManager = DatabaseManager(this)
-            var readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
-            var training: Training = databaseManager!!.selectTraining(readerDatabase, 0)
+            val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
+            val training: Training = databaseManager!!.selectTraining(readerDatabase, 0)
             for (measure in training.getTrainingHistory()) {
                 Log.d(TAG, "loaded measure : " + measure)
             }
@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private fun insertTrainingToDatabase() {
         synchronized(this) {
             databaseManager = DatabaseManager(this)
-            var writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
+            val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
             databaseManager!!.insertTraining(writeDatabase, training)
             writeDatabase.close()
             databaseManager!!.close()
@@ -147,8 +147,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     override fun onLocationChanged(location: Location?) {
         latitude = location!!.latitude
-        longitude = location!!.longitude
-        val message: String = "Latitude: " + latitude.toString() + "\nLongitude: " + longitude.toString() + "\nAltitude: " + location!!.altitude.toString() + "\nTime " + location!!.time
+        longitude = location.longitude
+        val message: String = "Latitude: " + latitude.toString() + "\nLongitude: " + longitude.toString() + "\nAltitude: " + location.altitude.toString() + "\nTime " + location.time
         location_textView.text = message
         if (isTraining) {
             training.addMeasurement(Measurement(location))
