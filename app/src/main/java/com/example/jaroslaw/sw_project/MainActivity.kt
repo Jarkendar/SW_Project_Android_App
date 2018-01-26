@@ -82,19 +82,23 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     fun stopTraining(view: View) {
-        isTraining = false
+        if (nicknameIsEmpty()) {
+            Toast.makeText(this, getString(R.string.nickname_is_empty_please_complete), Toast.LENGTH_SHORT).show()
+        } else {
+            isTraining = false
 
-        //todo save to databaseManager training, write function
-        for (measure in training.getTrainingHistory()) {
-            Log.d(TAG, "measure : " + measure)
+            //todo save to databaseManager training, write function
+            for (measure in training.getTrainingHistory()) {
+                Log.d(TAG, "measure : " + measure)
+            }
+
+            val str: String = getString(R.string.training_save_to_datebase)
+            Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
+            start_button.isEnabled = true
+            stop_button.isEnabled = false
+
+            insertTrainingToDatabase()
         }
-
-        val str: String = getString(R.string.training_save_to_datebase)
-        Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
-        start_button.isEnabled = true
-        stop_button.isEnabled = false
-
-        insertTrainingToDatabase()
     }
 
     fun readTrainingFromBase(view: View) {
@@ -115,25 +119,21 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     private fun insertTrainingToDatabase() {
-        if (nicknameIsFill()){
-            Toast.makeText(this, getString(R.string.nickname_is_empty),Toast.LENGTH_SHORT).show()
-        }else {
-            synchronized(this) {
-                databaseManager = DatabaseManager(this)
-                val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
-                databaseManager!!.insertTraining(writeDatabase, training, nickname_editText.text.toString())
-                writeDatabase.close()
-                databaseManager!!.close()
-            }
+        synchronized(this) {
+            databaseManager = DatabaseManager(this)
+            val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
+            databaseManager!!.insertTraining(writeDatabase, training, nickname_editText.text.toString())
+            writeDatabase.close()
+            databaseManager!!.close()
         }
     }
 
 
-    private fun nicknameIsFill() : Boolean{
-        if (nickname_editText.text.toString() == ""){
-            return false
+    private fun nicknameIsEmpty(): Boolean {
+        if (nickname_editText.text.toString() == "") {
+            return true
         }
-        return true
+        return false
     }
 
 
