@@ -93,7 +93,7 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
         val cursor: Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS,
                 arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
                 FIELD_SYNCHRONIZED + "=?",
-                arrayOf(0.toString()),
+                arrayOf("0"),
                 null,
                 null,
                 FIELD_TIME)
@@ -107,5 +107,12 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             Log.d(TAG, "location : $location; ${location.time}")
         }
         return locationList
+    }
+
+    fun updateSynchronizedStatus(sqLiteDatabase: SQLiteDatabase, time : Long){
+        Log.d(TAG, "update $sqLiteDatabase row : $time")
+        val contentValues = ContentValues()
+        contentValues.put(FIELD_SYNCHRONIZED, 1)
+        sqLiteDatabase.update(TABLE_NAME_TRAININGS,contentValues, FIELD_TIME+"=?", arrayOf(time.toString()))
     }
 }

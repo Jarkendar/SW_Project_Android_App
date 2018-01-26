@@ -82,18 +82,18 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     fun stopTraining(view: View) {
-            isTraining = false
+        isTraining = false
 
-            //todo save to databaseManager training, write function
-            for (measure in training.getTrainingHistory()) {
-                Log.d(TAG, "measure : " + measure)
-            }
+        //todo save to databaseManager training, write function
+        for (measure in training.getTrainingHistory()) {
+            Log.d(TAG, "measure : " + measure)
+        }
 
-            Toast.makeText(this, getString(R.string.training_save_to_database), Toast.LENGTH_SHORT).show()
-            start_button.isEnabled = true
-            stop_button.isEnabled = false
+        Toast.makeText(this, getString(R.string.training_save_to_database), Toast.LENGTH_SHORT).show()
+        start_button.isEnabled = true
+        stop_button.isEnabled = false
 
-            insertTrainingToDatabase()
+        insertTrainingToDatabase()
     }
 
     fun readTrainingFromBase(view: View) {
@@ -112,11 +112,37 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     fun synchronizeWithServer(view: View) {
         if (nicknameIsEmpty()) {
             Toast.makeText(this, getString(R.string.nickname_is_empty_please_complete), Toast.LENGTH_SHORT).show()
+        } else if (!addressIPIsCorrect()) {
+            Toast.makeText(this, getString(R.string.address_ip_is_empty_please_complete), Toast.LENGTH_SHORT).show()
         } else {
             databaseManager = DatabaseManager(this)
             val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
             databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
         }
+    }
+
+    private fun addressIPIsCorrect(): Boolean {
+        val tmp: String = adress_server_editText.text.toString()
+        Log.d(TAG, "address IP : $tmp")
+        val array = tmp.split(".")
+        Log.d(TAG, "array size ${array.size}")
+        if (array.size != 4) {
+            return false
+        } else {
+            for (str: String in array) {
+                Log.d(TAG, "for : $str")
+                try {
+                    val number = str.toInt()
+                    Log.d(TAG, "number $number")
+                    if (number > 255 || number < 0) {
+                        return false
+                    }
+                } catch (e : NumberFormatException){
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     private fun insertTrainingToDatabase() {
@@ -144,7 +170,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     private fun requestLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission
-                .ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                        .ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission
                         .ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
