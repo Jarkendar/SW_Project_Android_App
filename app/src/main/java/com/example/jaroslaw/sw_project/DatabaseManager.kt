@@ -36,19 +36,18 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             //todo create table in database
             val sqlQuery: String = "CREATE TABLE " + TABLE_NAME_TRAININGS + " (" +
                     FIELD_ROW_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    FIELD_USER_ID + "STRING," +
-                    FIELD_TRAINING_ID + " LONG," +
+                    FIELD_TRAINING_ID + " LONG, " +
                     FIELD_LATITUDE + " DOUBLE, " +
                     FIELD_LONGITUDE + " DOUBLE, " +
-                    FIELD_TIME + " LONG" +
-                    FIELD_SYNCHRONIZED + " BOOLEAN" +
+                    FIELD_TIME + " LONG, " +
+                    FIELD_SYNCHRONIZED + " INTEGER DEFAULT 0" +
                     " );"
             sqLiteDatabase!!.execSQL(sqlQuery)
             Log.d(TAG, "create database table = $sqlQuery")
         }
     }
 
-    fun insertTraining(sqLiteDatabase: SQLiteDatabase, training: Training, userID: String) {
+    fun insertTraining(sqLiteDatabase: SQLiteDatabase, training: Training) {
         Log.d(TAG, "insert: $sqLiteDatabase; training: $training")
         val trainingID = training.getTrainingID()
 
@@ -56,11 +55,10 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             //todo insert measurement to database
             val contentValues = ContentValues()
             contentValues.put(FIELD_TRAINING_ID, trainingID)
-            contentValues.put(FIELD_USER_ID, userID)
             contentValues.put(FIELD_LATITUDE, measure.getLocation().latitude)
             contentValues.put(FIELD_LONGITUDE, measure.getLocation().longitude)
             contentValues.put(FIELD_TIME, measure.getLocation().time)
-            contentValues.put(FIELD_SYNCHRONIZED, false)
+            contentValues.put(FIELD_SYNCHRONIZED, 0)
             sqLiteDatabase.insert(TABLE_NAME_TRAININGS, null, contentValues)
             Log.d(TAG, "insert to $TABLE_NAME_TRAININGS measurement = $contentValues")
         }
@@ -93,8 +91,9 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
     fun getAllNotSynchronizedTraining(sqLiteDatabase: SQLiteDatabase): LinkedList<Location> {
         Log.d(TAG, "select all: $sqLiteDatabase;")
         val cursor: Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS,
-                arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME),
-                FIELD_SYNCHRONIZED + "=?", arrayOf(true.toString()),
+                arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
+                FIELD_SYNCHRONIZED + "=?",
+                arrayOf(0.toString()),
                 null,
                 null,
                 FIELD_TIME)
@@ -105,6 +104,7 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             location.longitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LONGITUDE))
             location.time = cursor.getLong(cursor.getColumnIndex(FIELD_TIME))
             locationList.addLast(location)
+            Log.d(TAG, "location : $location; ${location.time}")
         }
         return locationList
     }

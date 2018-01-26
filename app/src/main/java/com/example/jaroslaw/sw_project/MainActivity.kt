@@ -82,9 +82,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     fun stopTraining(view: View) {
-        if (nicknameIsEmpty()) {
-            Toast.makeText(this, getString(R.string.nickname_is_empty_please_complete), Toast.LENGTH_SHORT).show()
-        } else {
             isTraining = false
 
             //todo save to databaseManager training, write function
@@ -92,13 +89,11 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                 Log.d(TAG, "measure : " + measure)
             }
 
-            val str: String = getString(R.string.training_save_to_datebase)
-            Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.training_save_to_database), Toast.LENGTH_SHORT).show()
             start_button.isEnabled = true
             stop_button.isEnabled = false
 
             insertTrainingToDatabase()
-        }
     }
 
     fun readTrainingFromBase(view: View) {
@@ -115,14 +110,20 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     fun synchronizeWithServer(view: View) {
-
+        if (nicknameIsEmpty()) {
+            Toast.makeText(this, getString(R.string.nickname_is_empty_please_complete), Toast.LENGTH_SHORT).show()
+        } else {
+            databaseManager = DatabaseManager(this)
+            val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
+            databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
+        }
     }
 
     private fun insertTrainingToDatabase() {
         synchronized(this) {
             databaseManager = DatabaseManager(this)
             val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
-            databaseManager!!.insertTraining(writeDatabase, training, nickname_editText.text.toString())
+            databaseManager!!.insertTraining(writeDatabase, training)
             writeDatabase.close()
             databaseManager!!.close()
         }
