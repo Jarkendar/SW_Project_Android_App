@@ -115,13 +115,25 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
     private fun insertTrainingToDatabase() {
-        synchronized(this) {
-            databaseManager = DatabaseManager(this)
-            val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
-            databaseManager!!.insertTraining(writeDatabase, training)
-            writeDatabase.close()
-            databaseManager!!.close()
+        if (nicknameIsFill()){
+            Toast.makeText(this, getString(R.string.nickname_is_empty),Toast.LENGTH_SHORT).show()
+        }else {
+            synchronized(this) {
+                databaseManager = DatabaseManager(this)
+                val writeDatabase: SQLiteDatabase = databaseManager!!.writableDatabase
+                databaseManager!!.insertTraining(writeDatabase, training, nickname_editText.text.toString())
+                writeDatabase.close()
+                databaseManager!!.close()
+            }
         }
+    }
+
+
+    private fun nicknameIsFill() : Boolean{
+        if (nickname_editText.text.toString() == ""){
+            return false
+        }
+        return true
     }
 
 

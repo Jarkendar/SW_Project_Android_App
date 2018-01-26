@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">SW_Project</string>
-    <string name="training_save_to_datebase">Training saving</string>
+    <string name="training_save_to_database">Training saving</string>
     <string name="read_base_button">Read base</string>
     <string name="synchronize_button">Synchronize</string>
+    <string name="nickname">Nickname</string>
+    <string name="host_address">127.0.0.1</string>
+    <string name="nickname_is_empty">Nickname is empty</string>
 </resources>
