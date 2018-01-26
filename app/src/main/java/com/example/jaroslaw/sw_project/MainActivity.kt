@@ -42,12 +42,13 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private var longitude: Double = 0.0
 
     private var training: Training = Training(0)
-    private val TRAINING_ID = 0L
     private var isTraining = false
     private var databaseManager: DatabaseManager? = null
 
     private val TAG = "MyActivity"
     private val ALL_PERMISSIONS_RESULT: Int = 101
+    private val SHARED_NAME : String = "SW_PROJECT"
+    private val TRAINING_ID_KEY : String = "TRAINING_ID"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,8 +81,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     fun startTraining(view: View) {
         isTraining = true
-        training = Training(TRAINING_ID)
-
+        val sharedPreferences = this.getSharedPreferences(SHARED_NAME, MODE_PRIVATE)
+        var trainingID : Long = sharedPreferences.getLong(TRAINING_ID_KEY, 0)
+        training = Training(trainingID)
+        val editor = sharedPreferences.edit()
+        editor.putLong(TRAINING_ID_KEY, ++trainingID)
+        editor.apply()
         start_button.isEnabled = false
         stop_button.isEnabled = true
     }
