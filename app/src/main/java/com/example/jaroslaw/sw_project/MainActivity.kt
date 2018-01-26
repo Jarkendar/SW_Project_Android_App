@@ -17,7 +17,6 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -74,9 +73,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
         Log.d(ContentValues.TAG, "googleApiClient" + googleApiClient.toString())
 
-        locationRequest.setInterval(10 * 1000)
-        locationRequest.setFastestInterval(5 * 1000)
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+        locationRequest.interval = 10 * 1000
+        locationRequest.fastestInterval = 5 * 1000
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
     fun startTraining(view: View) {
@@ -125,7 +124,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         } else if (!addressIPIsCorrect()) {
             Toast.makeText(this, getString(R.string.address_ip_is_empty_please_complete), Toast.LENGTH_SHORT).show()
         } else {
-            Synch().execute(nickname_editText.text.toString(),adress_server_editText.text.toString())
+            Sync().execute(nickname_editText.text.toString(),adress_server_editText.text.toString())
         }
     }
 
@@ -283,7 +282,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
 
 
-    inner class Synch : AsyncTask<String, Int, String>(){
+    inner class Sync : AsyncTask<String, Int, String>(){
         override fun onProgressUpdate(vararg values: Int?) {
             super.onProgressUpdate(*values)
             progressBar.progress = values[0]!!
