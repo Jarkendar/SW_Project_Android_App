@@ -88,31 +88,45 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
         return loadingTraining
     }
 
-    fun getAllNotSynchronizedTraining(sqLiteDatabase: SQLiteDatabase): LinkedList<Location> {
+    fun getAllNotSynchronizedTraining(sqLiteDatabase: SQLiteDatabase): LinkedList<Training> {
         Log.d(TAG, "select all: $sqLiteDatabase;")
         val cursor: Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS,
-                arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
+                arrayOf(FIELD_ROW_ID, FIELD_TRAINING_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
                 FIELD_SYNCHRONIZED + "=?",
                 arrayOf("0"),
                 null,
                 null,
                 FIELD_TIME)
-        val locationList : LinkedList<Location> = LinkedList()
-        while (cursor.moveToNext()){
+        val trainingList: LinkedList<Training> = LinkedList()
+        var previousTrainingID = -1L
+        var training :Training? = null
+        while (cursor.moveToNext()) {
+            if (previousTrainingID != cursor.getLong(cursor.getColumnIndex(FIELD_TRAINING_ID))){
+                if (training != null){
+                    trainingList.addLast(training)
+                    Log.d(TAG, "training : $training")
+                }
+                training = Training(cursor.getLong(cursor.getColumnIndex(FIELD_TRAINING_ID)))
+                previousTrainingID = cursor.getLong(cursor.getColumnIndex(FIELD_TRAINING_ID))
+            }
             val location = Location("")
             location.latitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LATITUDE))
             location.longitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LONGITUDE))
             location.time = cursor.getLong(cursor.getColumnIndex(FIELD_TIME))
-            locationList.addLast(location)
+            val measurement = Measurement(location)
+            training!!.addMeasurement(measurement)
             Log.d(TAG, "location : $location; ${location.time}")
         }
-        return locationList
+        if (training != null) {
+            trainingList.addLast(training)
+        }
+        return trainingList
     }
 
-    fun updateSynchronizedStatus(sqLiteDatabase: SQLiteDatabase, time : Long){
+    fun updateSynchronizedStatus(sqLiteDatabase: SQLiteDatabase, time: Long) {
         Log.d(TAG, "update $sqLiteDatabase row : $time")
         val contentValues = ContentValues()
         contentValues.put(FIELD_SYNCHRONIZED, 1)
-        sqLiteDatabase.update(TABLE_NAME_TRAININGS,contentValues, FIELD_TIME+"=?", arrayOf(time.toString()))
+        sqLiteDatabase.update(TABLE_NAME_TRAININGS, contentValues, FIELD_TIME + "=?", arrayOf(time.toString()))
     }
 }

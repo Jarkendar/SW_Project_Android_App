@@ -10,12 +10,14 @@ import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.location.Location
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -24,6 +26,8 @@ import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
+import java.util.*
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
@@ -44,6 +48,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     private val TAG = "MyActivity"
     private val ALL_PERMISSIONS_RESULT: Int = 101
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,9 +120,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         } else if (!addressIPIsCorrect()) {
             Toast.makeText(this, getString(R.string.address_ip_is_empty_please_complete), Toast.LENGTH_SHORT).show()
         } else {
-            databaseManager = DatabaseManager(this)
-            val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
-            databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
+            Synch().execute(nickname_editText.text.toString(),adress_server_editText.text.toString())
         }
     }
 
@@ -137,7 +140,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                     if (number > 255 || number < 0) {
                         return false
                     }
-                } catch (e : NumberFormatException){
+                } catch (e: NumberFormatException) {
                     return false
                 }
             }
@@ -270,6 +273,73 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                 .setNegativeButton("Cancel", null)
                 .create()
                 .show()
+    }
+
+
+
+
+    inner class Synch : AsyncTask<String, Int, String>(){
+        override fun onProgressUpdate(vararg values: Int?) {
+            super.onProgressUpdate(*values)
+            progressBar.progress = values[0]!!
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+            progressBar.visibility = View.GONE
+            synchronize_button.isEnabled = true
+        }
+
+        override fun doInBackground(vararg p0: String?): String? {
+            val username : String = p0[0]!!
+            //val address : String = p0[1]!!
+            databaseManager = DatabaseManager(this@MainActivity)
+            val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
+            val trainingToSynchronize = databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
+            var i = 0
+            for (training : Training in trainingToSynchronize){
+                for (measurement : Measurement in training.getTrainingHistory()){
+                    val location : Location = measurement.getLocation()
+                    val jsonObject = json {
+                        "username" To username
+                        "treningID" To training.getTrainingID()
+                        "longitude" To location.longitude
+                        "latitude" To location.latitude
+                        "time" To location.time}
+                    Log.d(TAG, "JSON : $jsonObject")
+
+                    //TODO send to server
+                }
+                i++
+                publishProgress((i/trainingToSynchronize.size)*100)
+            }
+            return ""
+        }
+
+        override fun onPreExecute() {
+            super.onPreExecute()
+            progressBar.progress = 0
+            progressBar.visibility = View.VISIBLE
+            synchronize_button.isEnabled = false
+        }
+
+        private fun json(build: JsonObjectBuilder.() -> Unit): JSONObject {
+            return JsonObjectBuilder().json(build)
+        }
+
+        inner class JsonObjectBuilder {
+            private val deque: Deque<JSONObject> = ArrayDeque()
+
+            fun json(build: JsonObjectBuilder.() -> Unit): JSONObject {
+                deque.push(JSONObject())
+                this.build()
+                return deque.pop()
+            }
+
+            infix fun <T> String.To(value: T) {
+                deque.peek().put(this, value)
+            }
+        }
     }
 
 }
