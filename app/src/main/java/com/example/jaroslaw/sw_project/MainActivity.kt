@@ -26,6 +26,12 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
+import java.io.IOException
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.Proxy
+import java.net.Socket
+import java.net.URL
 import java.util.*
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -48,6 +54,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private val ALL_PERMISSIONS_RESULT: Int = 101
     private val SHARED_NAME : String = "SW_PROJECT"
     private val TRAINING_ID_KEY : String = "TRAINING_ID"
+    private val PORT_NUMBER : Int = 12345
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -296,7 +303,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
         override fun doInBackground(vararg p0: String?): String? {
             val username : String = p0[0]!!
-            //val address : String = p0[1]!!
+            val address : String = p0[1]!!
             databaseManager = DatabaseManager(this@MainActivity)
             val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
             val trainingToSynchronize = databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
@@ -311,6 +318,51 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                         "latitude" To location.latitude
                         "time" To location.time}
                     Log.d(TAG, "JSON : $jsonObject")
+
+//                    try {
+//                        val socket = Socket(address, PORT_NUMBER)
+//                        if (socket.isConnected){
+//                            val outputStreamWriter = OutputStreamWriter(socket.getOutputStream())
+//                            outputStreamWriter.write(jsonObject.toString())
+//                            synchronized(this@MainActivity){
+//                                databaseManager = DatabaseManager(this@MainActivity)
+//                                val writeDatabaseManager = databaseManager!!.writableDatabase
+//                                databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,location.time)
+//                                Log.d(TAG, "change synchronize to true $jsonObject")
+//                            }
+//                        }
+//                    }catch (e : IOException){
+//                        Log.d(TAG, "socket is error")
+//                        e.printStackTrace()
+//                    }
+
+                    try{
+                        val url = URL("http://$address:$PORT_NUMBER/save")
+                        val proxy = Proxy(Proxy.Type.DIRECT, Socket(address,PORT_NUMBER).localSocketAddress)
+
+                        val connection = url.openConnection() as HttpURLConnection
+                        connection.doInput = false
+                        connection.doOutput = true
+                        connection.requestMethod = "POST"
+                        connection.setRequestProperty("Accept", "application/json")
+                        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                        val outputStreamWriter = OutputStreamWriter(connection.outputStream, "UTF-8")
+                        outputStreamWriter.write(jsonObject.toString())
+                        if(connection.responseCode == HttpURLConnection.HTTP_OK){
+                            synchronized(this@MainActivity){
+                                databaseManager = DatabaseManager(this@MainActivity)
+                                val writeDatabaseManager = databaseManager!!.writableDatabase
+                                databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,location.time)
+                                Log.d(TAG, "status ${connection.responseCode} and change synchronize to true $jsonObject")
+                            }
+                        }else{
+                            Log.d(TAG, "try send $jsonObject is not OK = ${connection.responseCode}")
+                        }
+                        connection.disconnect()
+                    }catch (e : IOException){
+                        Log.d(TAG, "something not work")
+                        e.printStackTrace()
+                    }
 
                     //TODO send to server
                 }
