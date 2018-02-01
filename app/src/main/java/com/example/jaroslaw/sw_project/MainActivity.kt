@@ -26,13 +26,12 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
+import java.io.DataOutputStream
 import java.io.IOException
 import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.Proxy
-import java.net.Socket
-import java.net.URL
+import java.net.*
 import java.util.*
+
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
@@ -54,7 +53,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     private val ALL_PERMISSIONS_RESULT: Int = 101
     private val SHARED_NAME : String = "SW_PROJECT"
     private val TRAINING_ID_KEY : String = "TRAINING_ID"
-    private val PORT_NUMBER : Int = 12345
+    private val PORT_NUMBER : Int = 3000
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,15 +138,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         val tmp: String = adress_server_editText.text.toString()
         Log.d(TAG, "address IP : $tmp")
         val array = tmp.split(".")
-        Log.d(TAG, "array size ${array.size}")
         if (array.size != 4) {
             return false
         } else {
             for (str: String in array) {
-                Log.d(TAG, "for : $str")
                 try {
                     val number = str.toInt()
-                    Log.d(TAG, "number $number")
                     if (number > 255 || number < 0) {
                         return false
                     }
@@ -311,59 +307,21 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
             for (training : Training in trainingToSynchronize){
                 for (measurement : Measurement in training.getTrainingHistory()){
                     val location : Location = measurement.getLocation()
-                    val jsonObject = json {
-                        "username" To username
-                        "treningID" To training.getTrainingID()
-                        "longitude" To location.longitude
-                        "latitude" To location.latitude
-                        "time" To location.time}
+                    val jsonObject = JSONObject()
+                    jsonObject.put("username", username)
+                    jsonObject.put("trainingID", training.getTrainingID().toString())
+                    jsonObject.put("longitude", location.longitude.toString())
+                    jsonObject.put("latitude", location.latitude.toString())
+                    jsonObject.put("time", location.time.toString())
+//                    val jsonObject = json {
+//                        "username" To username
+//                        "trainingID" To training.getTrainingID().toString()
+//                        "longitude" To location.longitude.toString()
+//                        "latitude" To location.latitude.toString()
+//                        "time" To location.time.toString()}
                     Log.d(TAG, "JSON : $jsonObject")
 
-//                    try {
-//                        val socket = Socket(address, PORT_NUMBER)
-//                        if (socket.isConnected){
-//                            val outputStreamWriter = OutputStreamWriter(socket.getOutputStream())
-//                            outputStreamWriter.write(jsonObject.toString())
-//                            synchronized(this@MainActivity){
-//                                databaseManager = DatabaseManager(this@MainActivity)
-//                                val writeDatabaseManager = databaseManager!!.writableDatabase
-//                                databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,location.time)
-//                                Log.d(TAG, "change synchronize to true $jsonObject")
-//                            }
-//                        }
-//                    }catch (e : IOException){
-//                        Log.d(TAG, "socket is error")
-//                        e.printStackTrace()
-//                    }
-
-                    try{
-                        val url = URL("http://$address:$PORT_NUMBER/save")
-                        val proxy = Proxy(Proxy.Type.DIRECT, Socket(address,PORT_NUMBER).localSocketAddress)
-
-                        val connection = url.openConnection() as HttpURLConnection
-                        connection.doInput = false
-                        connection.doOutput = true
-                        connection.requestMethod = "POST"
-                        connection.setRequestProperty("Accept", "application/json")
-                        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-                        val outputStreamWriter = OutputStreamWriter(connection.outputStream, "UTF-8")
-                        outputStreamWriter.write(jsonObject.toString())
-                        if(connection.responseCode == HttpURLConnection.HTTP_OK){
-                            synchronized(this@MainActivity){
-                                databaseManager = DatabaseManager(this@MainActivity)
-                                val writeDatabaseManager = databaseManager!!.writableDatabase
-                                databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,location.time)
-                                Log.d(TAG, "status ${connection.responseCode} and change synchronize to true $jsonObject")
-                            }
-                        }else{
-                            Log.d(TAG, "try send $jsonObject is not OK = ${connection.responseCode}")
-                        }
-                        connection.disconnect()
-                    }catch (e : IOException){
-                        Log.d(TAG, "something not work")
-                        e.printStackTrace()
-                    }
-
+                    sendRESTRequest(jsonObject, address)
                     //TODO send to server
                 }
                 i++
@@ -379,21 +337,45 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
             synchronize_button.isEnabled = false
         }
 
-        private fun json(build: JsonObjectBuilder.() -> Unit): JSONObject {
-            return JsonObjectBuilder().json(build)
-        }
+        private fun sendRESTRequest(jsonObject: JSONObject, address : String){
+            try{
+//                val url = URL("http://$address:$PORT_NUMBER/saveme" +
+//                        "/user/${jsonObject.getString("username")}" +
+//                        "/training/${jsonObject.getLong("trainingID")}" +
+//                        "/longtitude/${jsonObject.getDouble("longitude")}" +
+//                        "/latitude/${jsonObject.getDouble("latitude")}" +
+//                        "/mydate/${jsonObject.getLong("time")}")
+                //val url = URL("http://$address:$PORT_NUMBER/save")
+                val url = URL("http://$address:$PORT_NUMBER/save")
+                Log.d(TAG, "URL : $url")
 
-        inner class JsonObjectBuilder {
-            private val deque: Deque<JSONObject> = ArrayDeque()
-
-            fun json(build: JsonObjectBuilder.() -> Unit): JSONObject {
-                deque.push(JSONObject())
-                this.build()
-                return deque.pop()
-            }
-
-            infix fun <T> String.To(value: T) {
-                deque.peek().put(this, value)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.doOutput = true
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Content-Type", "application/json")
+                //val outputStreamWriter = OutputStreamWriter(connection.outputStream)
+                val dataOutputStream = DataOutputStream(connection.outputStream)
+                Log.d(TAG, "my json " + jsonObject.toString())
+                dataOutputStream.writeBytes(jsonObject.toString())
+                dataOutputStream.flush()
+                dataOutputStream.close()
+                //outputStreamWriter.write(jsonObject.toString())//"\""+jsonObject.toString().replace("\"", "\'")+"\"")
+                if(connection.responseCode == HttpURLConnection.HTTP_OK){
+                    synchronized(this@MainActivity){
+                        databaseManager = DatabaseManager(this@MainActivity)
+                        val writeDatabaseManager = databaseManager!!.writableDatabase
+                        databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,jsonObject.getLong("time"))
+                        Log.d(TAG, "status ${connection.responseCode} and change synchronize to true $jsonObject")
+                    }
+                }else{
+                    Log.d(TAG, "try send $jsonObject is not OK = ${connection.responseCode}")
+                }
+                connection.disconnect()
+            }catch (e : IOException){
+                Log.d(TAG, "something not work")
+                e.printStackTrace()
             }
         }
     }
