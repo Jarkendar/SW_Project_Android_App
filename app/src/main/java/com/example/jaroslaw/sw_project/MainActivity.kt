@@ -28,8 +28,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
 import java.io.DataOutputStream
 import java.io.IOException
-import java.io.OutputStreamWriter
-import java.net.*
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
 
 
@@ -51,9 +51,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     private val TAG = "MyActivity"
     private val ALL_PERMISSIONS_RESULT: Int = 101
-    private val SHARED_NAME : String = "SW_PROJECT"
-    private val TRAINING_ID_KEY : String = "TRAINING_ID"
-    private val PORT_NUMBER : Int = 3000
+    private val SHARED_NAME: String = "SW_PROJECT"
+    private val TRAINING_ID_KEY: String = "TRAINING_ID"
+    private val PORT_NUMBER: Int = 3000
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     fun startTraining(view: View) {
         isTraining = true
         val sharedPreferences = this.getSharedPreferences(SHARED_NAME, MODE_PRIVATE)
-        var trainingID : Long = sharedPreferences.getLong(TRAINING_ID_KEY, 0)
+        var trainingID: Long = sharedPreferences.getLong(TRAINING_ID_KEY, 0)
         training = Training(trainingID)
         val editor = sharedPreferences.edit()
         editor.putLong(TRAINING_ID_KEY, ++trainingID)
@@ -98,8 +98,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
     fun stopTraining(view: View) {
         isTraining = false
-
-        //todo save to databaseManager training, write function
         for (measure in training.getTrainingHistory()) {
             Log.d(TAG, "measure : " + measure)
         }
@@ -130,7 +128,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         } else if (!addressIPIsCorrect()) {
             Toast.makeText(this, getString(R.string.address_ip_is_empty_please_complete), Toast.LENGTH_SHORT).show()
         } else {
-            Sync().execute(nickname_editText.text.toString(),adress_server_editText.text.toString())
+            Sync().execute(nickname_editText.text.toString(), adress_server_editText.text.toString())
         }
     }
 
@@ -283,9 +281,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
     }
 
 
-
-
-    inner class Sync : AsyncTask<String, Int, String>(){
+    inner class Sync : AsyncTask<String, Int, String>() {
         override fun onProgressUpdate(vararg values: Int?) {
             super.onProgressUpdate(*values)
             progressBar.progress = values[0]!!
@@ -298,34 +294,27 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         }
 
         override fun doInBackground(vararg p0: String?): String? {
-            val username : String = p0[0]!!
-            val address : String = p0[1]!!
+            val username: String = p0[0]!!
+            val address: String = p0[1]!!
             databaseManager = DatabaseManager(this@MainActivity)
             val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
             val trainingToSynchronize = databaseManager!!.getAllNotSynchronizedTraining(readerDatabase)
             var i = 0
-            for (training : Training in trainingToSynchronize){
-                for (measurement : Measurement in training.getTrainingHistory()){
-                    val location : Location = measurement.getLocation()
+            for (training: Training in trainingToSynchronize) {
+                for (measurement: Measurement in training.getTrainingHistory()) {
+                    val location: Location = measurement.getLocation()
                     val jsonObject = JSONObject()
                     jsonObject.put("username", username)
                     jsonObject.put("trainingID", training.getTrainingID().toString())
                     jsonObject.put("longitude", location.longitude.toString())
                     jsonObject.put("latitude", location.latitude.toString())
                     jsonObject.put("time", location.time.toString())
-//                    val jsonObject = json {
-//                        "username" To username
-//                        "trainingID" To training.getTrainingID().toString()
-//                        "longitude" To location.longitude.toString()
-//                        "latitude" To location.latitude.toString()
-//                        "time" To location.time.toString()}
                     Log.d(TAG, "JSON : $jsonObject")
 
                     sendRESTRequest(jsonObject, address)
-                    //TODO send to server
                 }
                 i++
-                publishProgress((i/trainingToSynchronize.size)*100)
+                publishProgress((i / trainingToSynchronize.size) * 100)
             }
             return ""
         }
@@ -337,15 +326,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
             synchronize_button.isEnabled = false
         }
 
-        private fun sendRESTRequest(jsonObject: JSONObject, address : String){
-            try{
-//                val url = URL("http://$address:$PORT_NUMBER/saveme" +
-//                        "/user/${jsonObject.getString("username")}" +
-//                        "/training/${jsonObject.getLong("trainingID")}" +
-//                        "/longtitude/${jsonObject.getDouble("longitude")}" +
-//                        "/latitude/${jsonObject.getDouble("latitude")}" +
-//                        "/mydate/${jsonObject.getLong("time")}")
-                //val url = URL("http://$address:$PORT_NUMBER/save")
+        private fun sendRESTRequest(jsonObject: JSONObject, address: String) {
+            try {
                 val url = URL("http://$address:$PORT_NUMBER/save")
                 Log.d(TAG, "URL : $url")
 
@@ -355,25 +337,23 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Accept", "application/json")
                 connection.setRequestProperty("Content-Type", "application/json")
-                //val outputStreamWriter = OutputStreamWriter(connection.outputStream)
                 val dataOutputStream = DataOutputStream(connection.outputStream)
                 Log.d(TAG, "my json " + jsonObject.toString())
                 dataOutputStream.writeBytes(jsonObject.toString())
                 dataOutputStream.flush()
                 dataOutputStream.close()
-                //outputStreamWriter.write(jsonObject.toString())//"\""+jsonObject.toString().replace("\"", "\'")+"\"")
-                if(connection.responseCode == HttpURLConnection.HTTP_OK){
-                    synchronized(this@MainActivity){
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    synchronized(this@MainActivity) {
                         databaseManager = DatabaseManager(this@MainActivity)
                         val writeDatabaseManager = databaseManager!!.writableDatabase
-                        databaseManager!!.updateSynchronizedStatus(writeDatabaseManager,jsonObject.getLong("time"))
+                        databaseManager!!.updateSynchronizedStatus(writeDatabaseManager, jsonObject.getLong("time"))
                         Log.d(TAG, "status ${connection.responseCode} and change synchronize to true $jsonObject")
                     }
-                }else{
+                } else {
                     Log.d(TAG, "try send $jsonObject is not OK = ${connection.responseCode}")
                 }
                 connection.disconnect()
-            }catch (e : IOException){
+            } catch (e: IOException) {
                 Log.d(TAG, "something not work")
                 e.printStackTrace()
             }
