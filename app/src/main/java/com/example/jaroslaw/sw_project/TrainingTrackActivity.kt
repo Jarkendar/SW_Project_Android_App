@@ -8,10 +8,15 @@ import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import com.google.android.gms.maps.OnMapReadyCallback
 import kotlinx.android.synthetic.main.activity_training_track.*
 import java.util.*
+import com.google.android.gms.maps.GoogleMap
 
-class TrainingTrackActivity : AppCompatActivity() {
+
+class TrainingTrackActivity : AppCompatActivity(), OnMapReadyCallback {
+
+    private var mMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +46,9 @@ class TrainingTrackActivity : AppCompatActivity() {
                 }
             }
         }
+        mapView.onCreate(savedInstanceState)
+        mapView.onResume()
+        mapView.getMapAsync(this)
     }
 
     private fun getTrainingFromDatabase(trainingID : Long){
@@ -49,5 +57,9 @@ class TrainingTrackActivity : AppCompatActivity() {
             val readDatabase : SQLiteDatabase = databaseManager!!.readableDatabase
             val training = databaseManager!!.selectTraining(readDatabase, trainingID)
         }
+    }
+
+    override fun onMapReady(googleMap: GoogleMap?) {
+        mMap = googleMap
     }
 }

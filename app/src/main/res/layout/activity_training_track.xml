@@ -28,5 +28,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/training_chooser_spinner" />
+        app:layout_constraintTop_toBottomOf="@+id/training_chooser_spinner"
+        android:clickable="false"
+        android:enabled="true" />
 </android.support.constraint.ConstraintLayout>

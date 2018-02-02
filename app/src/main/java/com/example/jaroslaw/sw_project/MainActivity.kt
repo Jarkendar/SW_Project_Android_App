@@ -1,8 +1,7 @@
 package com.example.jaroslaw.sw_project
 
 import android.Manifest
-import android.Manifest.permission.ACCESS_COARSE_LOCATION
-import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.Manifest.permission.*
 import android.annotation.TargetApi
 import android.app.AlertDialog
 import android.content.ContentValues
@@ -63,6 +62,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
 
         permissions.add(ACCESS_FINE_LOCATION)
         permissions.add(ACCESS_COARSE_LOCATION)
+        permissions.add(INTERNET)
+        permissions.add(com.example.jaroslaw.sw_project.Manifest.permission.MAPS_RECEIVE)
+        permissions.add("com.google.android.providers.gsf.permission.READ_GSERVICES")
 
         permissionToRequest = findUnAskedPermissions(permissions)
 
