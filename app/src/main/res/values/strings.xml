@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">SW_Project</string>
     <string name="training_save_to_database">Training saving</string>
-    <string name="read_base_button">Read base</string>
+    <string name="browse_training_button">Browse trainings</string>
     <string name="synchronize_button">Synchronize</string>
     <string name="nickname">Nickname</string>
     <string name="host_address">127.0.0.1</string>
     <string name="nickname_is_empty_please_complete">Nickname is empty. Please complete.</string>
     <string name="address_ip_is_empty_please_complete">Address IP is empty. Please complete.</string>
+    <string name="first_element_list">Please choose element.</string>
 </resources>

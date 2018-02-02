@@ -9,7 +9,7 @@ class Measurement constructor(private var location: Location) {
     }
 
     override fun toString(): String{
-        return "Location: longitude="+location.longitude + "; latitude="+location.latitude+"; timeLocation="+location.time
+        return "Location: longitude="+location.longitude + "; latitude="+location.latitude+"; altitude="+location.altitude+"; timeLocation="+location.time
     }
 
 }

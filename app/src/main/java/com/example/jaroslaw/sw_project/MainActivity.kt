@@ -7,6 +7,7 @@ import android.annotation.TargetApi
 import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.location.Location
@@ -109,17 +110,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
         insertTrainingToDatabase()
     }
 
-    fun readTrainingFromBase(view: View) {
-        synchronized(this) {
-            databaseManager = DatabaseManager(this)
-            val readerDatabase: SQLiteDatabase = databaseManager!!.readableDatabase
-            val training: Training = databaseManager!!.selectTraining(readerDatabase, 0)
-            for (measure in training.getTrainingHistory()) {
-                Log.d(TAG, "loaded measure : " + measure)
-            }
-            readerDatabase.close()
-            databaseManager!!.close()
-        }
+    fun runTrainingBrowser(view: View) {
+        val intent = Intent(this, TrainingTrackActivity::class.java)
+        startActivity(intent)
     }
 
     fun synchronizeWithServer(view: View) {
@@ -308,6 +301,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks, G
                     jsonObject.put("trainingID", training.getTrainingID().toString())
                     jsonObject.put("longitude", location.longitude.toString())
                     jsonObject.put("latitude", location.latitude.toString())
+                    jsonObject.put("altitude", location.altitude.toString())
                     jsonObject.put("time", location.time.toString())
                     Log.d(TAG, "JSON : $jsonObject")
 

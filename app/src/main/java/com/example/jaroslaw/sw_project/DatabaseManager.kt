@@ -18,6 +18,7 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
     private val FIELD_ROW_ID: String = "_id"
     private val FIELD_LATITUDE: String = "LATITUDE"
     private val FIELD_LONGITUDE: String = "LONGITUDE"
+    private val FIELD_ALTITUDE: String = "ALTITUDE"
     private val FIELD_TIME: String = "TIME"
     private val FIELD_SYNCHRONIZED: String = "SYNCHRONIZED"
 
@@ -39,6 +40,7 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
                     FIELD_TRAINING_ID + " LONG, " +
                     FIELD_LATITUDE + " DOUBLE, " +
                     FIELD_LONGITUDE + " DOUBLE, " +
+                    FIELD_ALTITUDE + " DOUBLE, " +
                     FIELD_TIME + " LONG, " +
                     FIELD_SYNCHRONIZED + " INTEGER DEFAULT 0" +
                     " );"
@@ -52,11 +54,11 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
         val trainingID = training.getTrainingID()
 
         for (measure in training.getTrainingHistory()) {
-            //todo insert measurement to database
             val contentValues = ContentValues()
             contentValues.put(FIELD_TRAINING_ID, trainingID)
             contentValues.put(FIELD_LATITUDE, measure.getLocation().latitude)
             contentValues.put(FIELD_LONGITUDE, measure.getLocation().longitude)
+            contentValues.put(FIELD_ALTITUDE, measure.getLocation().altitude)
             contentValues.put(FIELD_TIME, measure.getLocation().time)
             contentValues.put(FIELD_SYNCHRONIZED, 0)
             sqLiteDatabase.insert(TABLE_NAME_TRAININGS, null, contentValues)
@@ -66,10 +68,8 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
 
     fun selectTraining(sqLiteDatabase: SQLiteDatabase, trainingID: Long): Training {
         Log.d(TAG, "select: $sqLiteDatabase; training ID: $trainingID")
-        //todo select training with specific ID
-        //sqLiteDatabase!!.query()
         val cursor: Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS,
-                arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME),
+                arrayOf(FIELD_ROW_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_ALTITUDE, FIELD_TIME),
                 FIELD_TRAINING_ID + "=?",
                 arrayOf(trainingID.toString()),
                 null,
@@ -80,18 +80,19 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             val location = Location("")
             location.latitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LATITUDE))
             location.longitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LONGITUDE))
+            location.altitude = cursor.getDouble(cursor.getColumnIndex(FIELD_ALTITUDE))
             location.time = cursor.getLong(cursor.getColumnIndex(FIELD_TIME))
             loadingTraining.addMeasurement(Measurement(location))
         }
         cursor.close()
-        Log.d(TAG, "end select: $sqLiteDatabase; training $loadingTraining")
+        Log.d(TAG, "end select: $sqLiteDatabase; training ${loadingTraining.getTrainingHistory()}")
         return loadingTraining
     }
 
     fun getAllNotSynchronizedTraining(sqLiteDatabase: SQLiteDatabase): LinkedList<Training> {
         Log.d(TAG, "select all: $sqLiteDatabase;")
         val cursor: Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS,
-                arrayOf(FIELD_ROW_ID, FIELD_TRAINING_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
+                arrayOf(FIELD_ROW_ID, FIELD_TRAINING_ID, FIELD_LATITUDE, FIELD_LONGITUDE, FIELD_ALTITUDE, FIELD_TIME, FIELD_SYNCHRONIZED),
                 FIELD_SYNCHRONIZED + "=?",
                 arrayOf("0"),
                 null,
@@ -112,6 +113,7 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
             val location = Location("")
             location.latitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LATITUDE))
             location.longitude = cursor.getDouble(cursor.getColumnIndex(FIELD_LONGITUDE))
+            location.altitude = cursor.getDouble(cursor.getColumnIndex(FIELD_ALTITUDE))
             location.time = cursor.getLong(cursor.getColumnIndex(FIELD_TIME))
             val measurement = Measurement(location)
             training!!.addMeasurement(measurement)
@@ -128,5 +130,16 @@ class DatabaseManager constructor(context: Context) : SQLiteOpenHelper(context, 
         val contentValues = ContentValues()
         contentValues.put(FIELD_SYNCHRONIZED, 1)
         sqLiteDatabase.update(TABLE_NAME_TRAININGS, contentValues, FIELD_TIME + "=?", arrayOf(time.toString()))
+    }
+
+    fun getAllTrainingNumbers(sqLiteDatabase: SQLiteDatabase) : LinkedList<String>{
+        Log.d(TAG, "getAllTrainingNumbers $sqLiteDatabase")
+        val cursor : Cursor = sqLiteDatabase.query(TABLE_NAME_TRAININGS, arrayOf(FIELD_TRAINING_ID),null,null,FIELD_TRAINING_ID,null,FIELD_TRAINING_ID)
+        val trainingIDList : LinkedList<String> = LinkedList()
+        while (cursor.moveToNext()){
+            trainingIDList.addLast(cursor.getLong(cursor.getColumnIndex(FIELD_TRAINING_ID)).toString())
+        }
+        Log.d(TAG, "array : $trainingIDList")
+        return trainingIDList
     }
 }
